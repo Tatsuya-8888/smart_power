@@ -1,0 +1,77 @@
+import serial
+import array
+import time
+from datetime import datetime
+# -*- coding: utf-8 -*-
+
+ser = serial.Serial("/dev/ttyS0", 115200)
+
+#time.sleep(2)
+
+#IE
+ser.write(str.encode("SKSETPWD C " + "BWVM8CLSRE9O" + "\r\n"))
+ser.write(str.encode("SKSETRBID " + "00000099021400000000000000E2F0B7" + "\r\n"))
+ser.write(str.encode("SKSREG S2 39"+"\r\n"))
+ser.write(str.encode("SKSREG S3 1BF9"+"\r\n"))
+ser.write(str.encode("SKJOIN FE80:0000:0000:0000:021C:6400:0373:1BF9"+"\r\n"))
+Address='FE80:0000:0000:0000:021C:6400:0373:1BF9'
+
+#NAYA
+#ser.write(str.encode("SKSETPWD C " + "843NU0BYXD6L" + "\r\n"))
+#ser.write(str.encode("SKSETRBID " + "00000099021400000000000000E2F063" + "\r\n"))
+#ser.write(str.encode("SKSREG S2 37"+"\r\n"))
+#ser.write(str.encode("SKSREG S3 BCF3"+"\r\n"))
+#ser.write(str.encode("SKJOIN FE80:0000:0000:0000:021C:6400:03F4:BCF3"+"\r\n"))
+#Address='FE80:0000:0000:0000:021C:6400:03F4:BCF3'
+
+
+ev25=True
+
+while ev25:
+	line=ser.readline().decode(encoding='utf-8')
+	print(line)
+	if line.startswith("EVENT 25"):
+		ev25=False
+		print("EVENT 25")
+	
+
+
+ser.timeout=1
+
+b_eco=b'\x10\x81\x00\x01\x05\xFF\x01\x02\x88\x01\x62\x01\xE7\x00'
+
+command = "SKSENDTO 1 {0} 0E1A 2 0 000E ".format(Address)
+
+#ser.write(str.encode(command) + str.encode(echonetLiteFrame))
+#ser.write(str.encode(command) + b_eco + str.encode("\r\n"))
+
+COUNT=0
+while True:
+	ser.readline()
+	ser.write(str.encode(command) + b_eco)
+	time.sleep(2)
+	ser.readline() 
+	#echo back
+
+	now = datetime.now()
+	print(now)
+
+	ev25=True
+	while ev25:
+		#print(COUNT)
+		COUNT+=1
+		if COUNT>12 : 
+			COUNT=0
+			ev25=False
+
+		line=ser.readline().decode(encoding='utf-8')
+		#print(line)
+		if line.startswith("ERXUDP"):
+			#print(line)
+			#print("")
+			watt=line[-8:]
+			iwatt= int(watt, 16)
+			print(str(iwatt)+"W")
+			ev25=False
+			#time.sleep(5)
+			COUNT=0
